@@ -15,6 +15,32 @@ class vericat:
 	#for -f (file format) option
 	file_format = False
 
+	#gen hash for single algorithm
+	def gen_hash(self, data, algo):
+		hash = None
+
+		#we don't want too many hashes, so we will limit to the most common algorithms
+		match algo:
+			case "md5":
+				hash = hashlib.md5
+			case "sha1":
+				hash = hashlib.sha1
+			case "sha256":
+				hash = hashlib.sha256
+			case "sha384":
+				hash = hashlib.sha384
+			case "sha512":
+				hash = hashlib.sha512
+
+		#if the hash wasn't found
+		if hash == None:
+			return None
+		
+		#return hash as hex digest
+		else:
+			return hash(data).hexdigest()
+				
+
 	def gen_hashes(self):
 		output = ""
 
@@ -25,36 +51,22 @@ class vericat:
 
 		#iterate through the selected algorithms
 		for algo in self.algo_list:
-			hash = None
 
-			match algo:
-				case "md5":
-					hash = hashlib.md5
-				case "sha1":
-					hash = hashlib.sha1
-				case "sha256":
-					hash = hashlib.sha256
-				case "sha384":
-					hash = hashlib.sha384
-				case "sha512":
-					hash = hashlib.sha512
-		
-			#list an error if the algorithm is unsupported
-			if hash == None:
-				output += algo + ": " + "Unsupported"
-				continue
+			#generate hash for the algorithm
+			hash = self.gen_hash(data, algo)
 
 			#list output with proper formatting
 			if self.file_format:
-				output += hash(data).hexdigest() + " " + self.input_filename + "\n"
+				output += hash + " " + self.input_filename + "\n"
 			else:
-				output += algo + ": " + hash(data).hexdigest() + "\n"
+				output += algo + ": " + hash + "\n"
 		
 		return output
 
 cat = vericat()
 cat.input_path = "vericat.py"
 cat.input_filename = "vericat.py"
+cat.file_format = True
 
 output = cat.gen_hashes()
 print(output)
