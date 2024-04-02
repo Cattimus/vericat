@@ -60,14 +60,6 @@ class vericat:
 				output += hash + " " + self.input_filename + "\n"
 			else:
 				output += algo + ": " + hash + "\n"
-
-		#output to file if requested
-		if self.output_path != "":
-			f = open(self.output_path, "w")
-			f.write(output)
-			f.close()
-
-			return "Output written to " + self.output_path
 		
 		return output
 
@@ -80,4 +72,12 @@ cat.output_path = "test.cat"
 cat.output_filename = "test.cat"
 
 output = cat.gen_hashes()
-print(output)
+
+#output to file if requested
+if cat.output_path != "":
+	f = open(cat.output_path, "w")
+	f.write(output)
+	f.close()
+	print("Output written to " + cat.output_path)
+else:
+	print(output)
