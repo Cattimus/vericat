@@ -15,6 +15,31 @@ class vericat:
 	#for -f (file format) option
 	file_format = False
 
+	#attempt to identify hashing algorithm by length of hash
+	def identify_hash(self, hash):
+		match len(hash):
+			case 32:
+				return "md5"
+			case 40:
+				return "sha1"
+			case 64:
+				return "sha256"
+			case 96:
+				return "sha384"
+			case 128:
+				return "sha512"
+			
+		return None
+
+	#check hash for a single algorithm
+	def check_hash(self, data, algo, hash):
+		reference_hash = self.gen_hash(data, algo)
+		
+		if reference_hash == hash:
+			return True
+		else:
+			return False
+
 	#gen hash for single algorithm
 	def gen_hash(self, data, algo):
 		hash = None
