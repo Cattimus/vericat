@@ -35,6 +35,7 @@ class vericat:
 	#for -t (truncate path) option
 	truncate_path = False
 
+	#TODO - write this to output instead of to stdout directly
 	#attempt to identify hashing algorithm by length of hash
 	def identify_hash(self, hash):
 		l = len(hash)
@@ -45,6 +46,7 @@ class vericat:
 		print("Unable to detect hashing algorithm based on input: [", hash, "]", file=sys.stderr)
 		return None
 
+	#TODO - write this to output instead of to stdout directly
 	#check hash for a single algorithm
 	def check_hash(self, path, hash):
 		algo = self.identify_hash(hash)
@@ -115,7 +117,11 @@ class vericat:
 		handle.close()
 		return hash
 				
-	def gen_hashes(self, path):
+	def gen_hashes(self, path=None):
+		#default to using input_path unless specified
+		if path == None:
+			path = self.input_path
+
 		self.output_data = ""
 		print("Generating hashes for file: " + path + "...\n")
 
@@ -131,11 +137,11 @@ class vericat:
 				i = final_path.rfind("/")
 				if i == -1:
 					i = final_path.rfind("\\")
-				final_path = final_path[i:]
+				final_path = final_path[i+1:]
 
 			#list output with proper formatting
 			if self.file_format:
-				self.output_data += hash + " " + path + "\n"
+				self.output_data += hash + " " + final_path + "\n"
 			else:
 				self.output_data += algo + ": " + hash + "\n"
 
@@ -149,23 +155,14 @@ class vericat:
 		else:
 			print(self.output_data)
 
+		self.output_data = ""
+
 
 cat = vericat()
 
-'''
-cat.input_path = "test.cat"
-cat.input_filename = "test.cat"
-
+cat.input_path = "vericat.py"
+cat.output_path = "test.cat"
 cat.file_format = True
-cat.output_path = "test2.cat"
-cat.output_filename = "test2.cat"
-
-#read data from file
-f = open(cat.input_path, "rb")
-
-cat.gen_hashes(f)
-f.close()
+cat.gen_hashes()
 cat.write_output()
-'''
-
 cat.check_hashes("test.cat")
