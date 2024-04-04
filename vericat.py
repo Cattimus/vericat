@@ -2,6 +2,11 @@ import hashlib
 import sys
 import re
 
+#EDGE CASE - hashes in hashfile are for different files
+
+#dictionary of hashing algorithms and their expected lengths
+hashes = {32: "md5", 40: "sha1", 64: "sha256", 96: "sha384", 128: "sha512"}
+
 class vericat:
 	#pattern match for hashes in file
 	pattern = r"([0-9a-fA-F]+) +(\S+)"
@@ -22,22 +27,10 @@ class vericat:
 
 	#attempt to identify hashing algorithm by length of hash
 	def identify_hash(self, hash):
-		match len(hash):
-			case 32:
-				print("Detected hashing algorithm: md5 [", hash, "]")
-				return "md5"
-			case 40:
-				print("Detected hashing algorithm: sha1 [", hash, "]")
-				return "sha1"
-			case 64:
-				print("Detected hashing algorithm: sha256 [", hash, "]")
-				return "sha256"
-			case 96:
-				print("Detected hashing algorithm: sha384 [", hash, "]")
-				return "sha384"
-			case 128:
-				print("Detected hashing algorithm: sha512 [", hash, "]")
-				return "sha512"
+		l = len(hash)
+		if l in hashes:
+			print("Detected hashing algorithm: ", hashes[l], "[", hash, "]")
+			return hashes[l]
 		
 		print("Unable to detect hashing algorithm based on input", file=sys.stderr)
 		return None
@@ -51,9 +44,9 @@ class vericat:
 		reference_hash = self.gen_hash(data, algo)
 		
 		if reference_hash == hash:
-			return True
+			print("Match.")
 		else:
-			return False
+			print("MISMATCH: ", reference_hash)
 
 	#check all hashes from a file
 	#by default, it will get the name of the file from the hash file on disk
@@ -91,7 +84,6 @@ class vericat:
 			#read file data so we can check hashes in realtime
 			if file_path == None:
 				#construct new file path from base path
-				print(hash_path)
 				end_index = hash_path.rfind("/")+1
 				base_path = ""
 				if end_index != -1:
@@ -105,11 +97,7 @@ class vericat:
 			
 			#check hash
 			hash = info[0]
-			is_match = self.check_hash(file_data, hash)
-			if is_match:
-				print("Match")
-			else:
-				print("MISMATCH: ", hash)
+			self.check_hash(file_data, hash)
 		
 		return
 
@@ -181,5 +169,3 @@ if cat.output_path != "":
 else:
 	print(output)
 	'''
-
-cat.check_hashes("test2.cat")
