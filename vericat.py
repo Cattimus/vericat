@@ -29,7 +29,7 @@ class vericat:
 	#for -o(utput) option
 	output_path = None
 
-	output_data = None
+	output_data = ""
 
 	#for -f=true/false (file format) option
 	file_format = False
@@ -127,7 +127,7 @@ class vericat:
 			return None
 				
 	def gen_hashes(self):
-		self.output_data = None
+		self.output_data = ""
 		print(f"Generating hashes for file: {self.input_path}...")
 
 		#iterate through the selected algorithms
@@ -152,7 +152,7 @@ class vericat:
 
 	#write output to user (or file if requested)
 	def write_output(self):
-		if self.output_path != None and self.output_data != None:
+		if self.output_path != None and self.output_data != "":
 			f = open(self.output_path, "w")
 			f.write(self.output_data)
 			f.close()
@@ -160,7 +160,7 @@ class vericat:
 		else:
 			print(self.output_data)
 
-		self.output_data = None
+		self.output_data = ""
 
 def main():
 	cat = vericat()
