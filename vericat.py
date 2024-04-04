@@ -192,7 +192,12 @@ def main():
 
 		#select algorithm(s)
 		elif "--algo=" in arg:
-			continue
+			val = arg.split("=")[1]
+			list = val.split(",")
+
+			#do some python magic to only allow algorithms that are already in the default list
+			l = [x for x in list if x in cat.algo_list]
+			cat.algo_list = l
 
 	if cat.input_path != None and cat.hash_path != None:
 		cat.check_hashes(cat.input)
