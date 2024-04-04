@@ -4,6 +4,8 @@ import re
 
 #EDGE CASE - hashes in hashfile are for different files
 
+#TODO - clean up this stinky spaghetti mess I have created
+
 #dictionary of hashing algorithms and their expected lengths
 hashes = {
 	32: "md5",
@@ -224,8 +226,18 @@ def main():
 	
 	#check hashes for file
 	elif cat.hash_path != None:
-		cat.check_hashes()
-		cat.write_output()
+
+		#we're checking against hashes provided as arguments
+		if len(cat.arg_hashes) > 0:
+			print(f"Checking hashes for file {cat.hash_path}...")
+			for hash in cat.arg_hashes:
+				cat.check_hash(cat.hash_path, hash)
+
+			cat.write_output()
+
+		else:
+			cat.check_hashes()
+			cat.write_output()
 
 if __name__ == '__main__':
 	main()
