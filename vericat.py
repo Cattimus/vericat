@@ -74,11 +74,14 @@ class vericat:
 		#standardize path to *nix
 		hash_path = hash_path.replace("\\", "/")
 
-		#TODO - Handle files that don't exist gracefully
 		#get list of hashes from hashfile
-		f = open(hash_path, "r")
-		hash_data = f.read()
-		f.close()
+		try:
+			f = open(hash_path, "r")
+			hash_data = f.read()
+			f.close()
+		except:
+			print(f"Error opening file: {hash_path}", file=sys.stderr)
+			return None
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
@@ -106,17 +109,20 @@ class vericat:
 			self.check_hash(file_path, hash)
 		return
 
-	#TODO - Handle files that don't exist gracefully
 	#hash file from path
 	def gen_hash(self, path, algo):
 		if not algo in hashlib.algorithms_available:
 			print("Hashing algorithm is not supported.", file=sys.stderr)
 			return None
 		
-		handle = open(path, "rb")
-		hash = hashlib.file_digest(handle, algo).hexdigest()
-		handle.close()
-		return hash
+		try:
+			handle = open(path, "rb")
+			hash = hashlib.file_digest(handle, algo).hexdigest()
+			handle.close()
+			return hash
+		except:
+			print(f"Error opening file: {path}", file=sys.stderr)
+			return None
 				
 	def gen_hashes(self, path=None):
 		#default to using input_path unless specified
