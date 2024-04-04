@@ -5,7 +5,22 @@ import re
 #EDGE CASE - hashes in hashfile are for different files
 
 #dictionary of hashing algorithms and their expected lengths
-hashes = {32: "md5", 40: "sha1", 64: "sha256", 96: "sha384", 128: "sha512"}
+hashes = {
+	32: "md5",
+	40: "sha1",
+	64: "sha256",
+	96: "sha384",
+	128: "sha512"
+}
+
+#map algorithm names to hashing functions
+algorithms = {
+	"md5": hashlib.md5,
+	"sha1": hashlib.sha1,
+	"sha256": hashlib.sha256,
+	"sha384": hashlib.sha384,
+	"sha512": hashlib.sha512
+}
 
 class vericat:
 	#pattern match for hashes in file
@@ -101,28 +116,10 @@ class vericat:
 
 	#gen hash for single algorithm
 	def gen_hash(self, data, algo):
-		hash = None
-
-		#we don't want too many hashes, so we will limit to the most common algorithms
-		match algo:
-			case "md5":
-				hash = hashlib.md5
-			case "sha1":
-				hash = hashlib.sha1
-			case "sha256":
-				hash = hashlib.sha256
-			case "sha384":
-				hash = hashlib.sha384
-			case "sha512":
-				hash = hashlib.sha512
-
-		#if the hash wasn't found
-		if hash == None:
+		if not algo in algorithms:
 			return None
 		
-		#return hash as hex digest
-		else:
-			return hash(data).hexdigest()
+		return algorithms[algo](data).hexdigest()
 				
 
 	def gen_hashes(self, data):
