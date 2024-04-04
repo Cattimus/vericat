@@ -26,6 +26,9 @@ class vericat:
 	#for --algo=md5,sha256,sha... option
 	algo_list = ["md5", "sha1", "sha256", "sha384", "sha512"]
 
+	#for hashes
+	arg_hashes = []
+
 	#for -o(utput) option
 	output_path = None
 
@@ -165,6 +168,9 @@ class vericat:
 def main():
 	cat = vericat()
 
+	#pattern to check if something is a hash or not
+	hash_pattern = re.compile(r'[0-9a-fA-F]+')
+
 	#start handling command line arguments
 	for i in range(1, len(sys.argv)):
 		arg = sys.argv[i]
@@ -175,7 +181,7 @@ def main():
 			i += 1
 			
 		#generate hashes
-		elif arg == "-gen" or arg == "-g":
+		elif arg == "-gen" or arg == "-g" or arg == "-i":
 			cat.input_path = sys.argv[i+1]
 			i += 1
 
@@ -199,8 +205,12 @@ def main():
 			l = [x for x in list if x in cat.algo_list]
 			cat.algo_list = l
 
+		#value is a hash that is intended to be checked against
+		elif hash_pattern.match(arg):
+			cat.arg_hashes.append(arg)
+
 	if cat.input_path != None and cat.hash_path != None:
-		cat.check_hashes(cat.input)
+		cat.check_hashes()
 		cat.write_output()
 
 	#generate hashes for file
@@ -209,7 +219,6 @@ def main():
 		if cat.output_path != None and cat.manual_format == False:
 			cat.file_format = True
 
-		print(cat.file_format)
 		cat.gen_hashes()
 		cat.write_output()
 	
