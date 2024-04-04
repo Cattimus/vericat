@@ -1,4 +1,5 @@
 import hashlib
+import sys
 
 class vericat:
 	#for -i(nput file) option
@@ -19,20 +20,32 @@ class vericat:
 	def identify_hash(self, hash):
 		match len(hash):
 			case 32:
+				print("Detected hashing algorithm: md5")
 				return "md5"
 			case 40:
+				print("Detected hashing algorithm: sha1")
 				return "sha1"
 			case 64:
+				print("Detected hashing algorithm: sha256")
 				return "sha256"
 			case 96:
+				print("Detected hashing algorithm: sha384")
 				return "sha384"
 			case 128:
+				print("Detected hashing algorithm: sha512")
 				return "sha512"
-			
+		
+		print("Unable to detect hashing algorithm based on input", file=sys.stderr)
 		return None
 
 	#check hash for a single algorithm
-	def check_hash(self, data, algo, hash):
+	def check_hash(self, data, hash):
+		#attempt to identify hash by string
+		#this will need to be reworked later to return/display an error
+		algo = self.identify_hash(hash)
+		if algo == None:
+			return False
+
 		reference_hash = self.gen_hash(data, algo)
 		
 		if reference_hash == hash:
@@ -66,13 +79,8 @@ class vericat:
 			return hash(data).hexdigest()
 				
 
-	def gen_hashes(self):
+	def gen_hashes(self, data):
 		output = ""
-
-		#get file data
-		f = open(self.input_path, "rb")
-		data = f.read()
-		f.close()
 
 		#iterate through the selected algorithms
 		for algo in self.algo_list:
@@ -89,14 +97,25 @@ class vericat:
 		return output
 
 cat = vericat()
-cat.input_path = "vericat.py"
-cat.input_filename = "vericat.py"
+cat.input_path = "test.cat"
+cat.input_filename = "test.cat"
 
 cat.file_format = True
-cat.output_path = "test.cat"
-cat.output_filename = "test.cat"
+cat.output_path = "test2.cat"
+cat.output_filename = "test2.cat"
 
-output = cat.gen_hashes()
+#read data from file
+f = open(cat.input_path, "rb")
+data = f.read()
+f.close()
+
+output = cat.gen_hashes(data)
+
+is_valid = cat.check_hash(data, "0d44314a33b8b4fed90909b5e8d501351669fe26d59c9cad7829ebadc12572c0bb910da5bcecc79ed2350bf9bdb66b8da079c66ff2fbc993a32461f1ed542821")
+if is_valid:
+	print("Hashes match.")
+else:
+	print("Hashes do not match.")
 
 #output to file if requested
 if cat.output_path != "":
