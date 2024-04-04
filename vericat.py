@@ -199,7 +199,7 @@ def main():
 		cat.write_output()
 
 	#generate hashes for file
-	elif cat.input_path != "":
+	elif cat.input_path != None:
 		#automatically set file format to true for generating if an output file is set
 		if cat.output_path != None and cat.manual_format == False:
 			cat.file_format = True
@@ -208,7 +208,7 @@ def main():
 		cat.write_output()
 	
 	#check hashes for file
-	elif cat.hash_path != "":
+	elif cat.hash_path != None:
 		cat.check_hashes()
 		cat.write_output()
 
