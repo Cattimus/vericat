@@ -171,12 +171,12 @@ def main():
 
 		#check hashes
 		if arg == "-check" or arg == "-c":
-			cat.input_path = sys.argv[i+1]
+			cat.hash_path = sys.argv[i+1]
 			i += 1
 			
 		#generate hashes
 		elif arg == "-gen" or arg == "-g":
-			cat.hash_path = sys.argv[i+1]
+			cat.input_path = sys.argv[i+1]
 			i += 1
 
 		#output file
