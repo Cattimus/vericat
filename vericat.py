@@ -188,7 +188,7 @@ def main():
 		elif "-f=" in arg:
 			cat.manual_format = True
 			val = arg.split("=")[1]
-			cat.file_format = bool(val)
+			cat.file_format = val.lower() == "true"
 
 		#select algorithm(s)
 		elif "--algo=" in arg:
@@ -204,6 +204,7 @@ def main():
 		if cat.output_path != None and cat.manual_format == False:
 			cat.file_format = True
 
+		print(cat.file_format)
 		cat.gen_hashes()
 		cat.write_output()
 	
