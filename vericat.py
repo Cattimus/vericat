@@ -35,15 +35,14 @@ class vericat:
 	#for -t (truncate path) option
 	truncate_path = False
 
-	#TODO - write this to output instead of to stdout directly
 	#attempt to identify hashing algorithm by length of hash
 	def identify_hash(self, hash):
 		l = len(hash)
 		if l in hashes:
-			print("Detected algorithm from hash: " + hashes[l] + " [" + hash + "]")
+			self.output_data += f"{hashes[l] :>7}: "
 			return hashes[l]
 		
-		print("Unable to detect hashing algorithm based on input: [", hash, "]", file=sys.stderr)
+		self.output_data += f"Unable to detect hashing algorithm based on input: {hash}\n"
 		return None
 
 	#TODO - write this to output instead of to stdout directly
@@ -57,9 +56,10 @@ class vericat:
 		reference_hash = self.gen_hash(path, algo)
 		
 		if reference_hash == hash:
-			print("Hashes match.")
+			self.output_data += f"MATCH [{reference_hash}]\n"
 		else:
-			print("HASH MISMATCH: ", reference_hash)
+			self.output_data += f"MISMATCH [{hash}]\n"
+			self.output_data += f"{'EXPECTED ' :>18}" + f"[{reference_hash}]\n"
 
 	#check all hashes from a file
 	#by default, it will get the name of the file from the hash file on disk
@@ -68,7 +68,8 @@ class vericat:
 		hash_data = None
 
 		if file_path != None:
-			print("Checking hashes for file: " + file_path + "...\n")
+			#this is written to stdout to display immediately
+			print(f"Checking hashes for file: {file_path}...")
 
 		#standardize path to *nix
 		hash_path = hash_path.replace("\\", "/")
@@ -98,7 +99,7 @@ class vericat:
 					base_path = hash_path[:end_index]
 				file_path = base_path + info[1]
 
-				print("Checking hashes for file: " + file_path + "...\n")
+				print(f"Checking hashes for file: {file_path}...")
 			
 			#check hash
 			hash = info[0]
@@ -109,7 +110,7 @@ class vericat:
 	#hash file from path
 	def gen_hash(self, path, algo):
 		if not algo in hashlib.algorithms_available:
-			print("Hashing algorithm is not supported.")
+			print("Hashing algorithm is not supported.", file=sys.stderr)
 			return None
 		
 		handle = open(path, "rb")
@@ -123,7 +124,7 @@ class vericat:
 			path = self.input_path
 
 		self.output_data = ""
-		print("Generating hashes for file: " + path + "...\n")
+		print(f"Generating hashes for file: {path}...")
 
 		#iterate through the selected algorithms
 		for algo in self.algo_list:
@@ -141,9 +142,9 @@ class vericat:
 
 			#list output with proper formatting
 			if self.file_format:
-				self.output_data += hash + " " + final_path + "\n"
+				self.output_data += f"{hash} {final_path}\n"
 			else:
-				self.output_data += algo + ": " + hash + "\n"
+				self.output_data += f"{algo}: {hash}\n"
 
 	#write output to user (or file if requested)
 	def write_output(self):
@@ -151,7 +152,7 @@ class vericat:
 			f = open(self.output_path, "w")
 			f.write(self.output_data)
 			f.close()
-			print("Output written to ", self.output_path)
+			print(f"Output written to {self.output_path}\n")
 		else:
 			print(self.output_data)
 
@@ -165,4 +166,6 @@ cat.output_path = "test.cat"
 cat.file_format = True
 cat.gen_hashes()
 cat.write_output()
+cat.output_path = ""
 cat.check_hashes("test.cat")
+cat.write_output()
