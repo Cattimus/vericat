@@ -31,8 +31,9 @@ class vericat:
 
 	output_data = None
 
-	#for -f (file format) option
+	#for -f=true/false (file format) option
 	file_format = False
+	manual_format = False
 	
 	#for -t (truncate path) option
 	truncate_path = False
@@ -161,7 +162,7 @@ class vericat:
 
 		self.output_data = None
 
-def __main__():
+def main():
 	cat = vericat()
 
 	#start handling command line arguments
@@ -183,17 +184,33 @@ def __main__():
 			cat.output_path = sys.argv[i+1]
 			i += 1
 
+		#set file_format flag
+		elif "-f=" in arg:
+			cat.manual_format = True
+			val = arg.split("=")[1]
+			cat.file_format = bool(val)
+
 		#select algorithm(s)
 		elif "--algo=" in arg:
 			continue
 
 	if cat.input_path != None and cat.hash_path != None:
 		cat.check_hashes(cat.input)
+		cat.write_output()
 
-	if cat.input_path != "":
+	#generate hashes for file
+	elif cat.input_path != "":
+		#automatically set file format to true for generating if an output file is set
+		if cat.output_path != None and cat.manual_format == False:
+			cat.file_format = True
+
 		cat.gen_hashes()
 		cat.write_output()
 	
-	if cat.hash_path != "":
+	#check hashes for file
+	elif cat.hash_path != "":
 		cat.check_hashes()
 		cat.write_output()
+
+if __name__ == '__main__':
+	main()
