@@ -1,7 +1,11 @@
 import hashlib
 import sys
+import re
 
 class vericat:
+	#pattern match for hashes in file
+	pattern = r"([0-9a-fA-F]+) +(\S+)"
+
 	#for -i(nput file) option
 	input_path = ""
 	input_filename = ""
@@ -20,19 +24,19 @@ class vericat:
 	def identify_hash(self, hash):
 		match len(hash):
 			case 32:
-				print("Detected hashing algorithm: md5")
+				print("Detected hashing algorithm: md5 [", hash, "]")
 				return "md5"
 			case 40:
-				print("Detected hashing algorithm: sha1")
+				print("Detected hashing algorithm: sha1 [", hash, "]")
 				return "sha1"
 			case 64:
-				print("Detected hashing algorithm: sha256")
+				print("Detected hashing algorithm: sha256 [", hash, "]")
 				return "sha256"
 			case 96:
-				print("Detected hashing algorithm: sha384")
+				print("Detected hashing algorithm: sha384 [", hash, "]")
 				return "sha384"
 			case 128:
-				print("Detected hashing algorithm: sha512")
+				print("Detected hashing algorithm: sha512 [", hash, "]")
 				return "sha512"
 		
 		print("Unable to detect hashing algorithm based on input", file=sys.stderr)
@@ -40,8 +44,6 @@ class vericat:
 
 	#check hash for a single algorithm
 	def check_hash(self, data, hash):
-		#attempt to identify hash by string
-		#this will need to be reworked later to return/display an error
 		algo = self.identify_hash(hash)
 		if algo == None:
 			return False
@@ -52,6 +54,64 @@ class vericat:
 			return True
 		else:
 			return False
+
+	#check all hashes from a file
+	#by default, it will get the name of the file from the hash file on disk
+	#can also optionally accept a filepath if the hash file is in another directory
+	def check_hashes(self, hash_path, file_path=None):
+		file_data = None
+		hash_data = None
+
+		#standardize path to *nix
+		hash_path = hash_path.replace("\\", "/")
+
+		#get file binary data from provided path
+		if file_path != None:
+			f = open(file_path, "rb")
+			file_data = f.read()
+			f.close()
+
+		#get list of hashes from hashfile
+		f = open(hash_path, "r")
+		hash_data = f.read()
+		f.close()
+
+		hashes = {}
+
+		#read data from all lines of the hashfile
+		for line in hash_data.split("\n"):
+			info = re.search(self.pattern, line)
+
+			#stop loop if we hit a line we can't parse
+	 		#this avoids reading massive binary files by accident
+			if info == None:
+				break
+			info = info.groups()
+
+			#read file data so we can check hashes in realtime
+			if file_path == None:
+				#construct new file path from base path
+				print(hash_path)
+				end_index = hash_path.rfind("/")+1
+				base_path = ""
+				if end_index != -1:
+					base_path = hash_path[:end_index]
+				file_path = base_path + info[1]
+
+				#read data from file
+				f = open(file_path, "rb")
+				file_data = f.read()
+				f.close()
+			
+			#check hash
+			hash = info[0]
+			is_match = self.check_hash(file_data, hash)
+			if is_match:
+				print("Match")
+			else:
+				print("MISMATCH: ", hash)
+		
+		return
 
 	#gen hash for single algorithm
 	def gen_hash(self, data, algo):
@@ -94,9 +154,11 @@ class vericat:
 			else:
 				output += algo + ": " + hash + "\n"
 		
+		#we remove the last newline off the file to not append an empty line
 		return output
 
 cat = vericat()
+'''
 cat.input_path = "test.cat"
 cat.input_filename = "test.cat"
 
@@ -109,13 +171,6 @@ f = open(cat.input_path, "rb")
 data = f.read()
 f.close()
 
-output = cat.gen_hashes(data)
-
-is_valid = cat.check_hash(data, "0d44314a33b8b4fed90909b5e8d501351669fe26d59c9cad7829ebadc12572c0bb910da5bcecc79ed2350bf9bdb66b8da079c66ff2fbc993a32461f1ed542821")
-if is_valid:
-	print("Hashes match.")
-else:
-	print("Hashes do not match.")
 
 #output to file if requested
 if cat.output_path != "":
@@ -125,3 +180,6 @@ if cat.output_path != "":
 	print("Output written to " + cat.output_path)
 else:
 	print(output)
+	'''
+
+cat.check_hashes("test2.cat")
