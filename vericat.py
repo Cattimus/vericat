@@ -69,8 +69,6 @@ class vericat:
 		hash_data = f.read()
 		f.close()
 
-		hashes = {}
-
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
 			info = re.search(self.pattern, line)
