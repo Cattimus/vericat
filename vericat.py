@@ -37,6 +37,8 @@ class vericat:
 	output_path = ""
 	output_filename = ""
 
+	output_data = ""
+
 	#for -f (file format) option
 	file_format = False
 
@@ -121,9 +123,8 @@ class vericat:
 		
 		return algorithms[algo](data).hexdigest()
 				
-
 	def gen_hashes(self, data):
-		output = ""
+		self.output_data = ""
 
 		#iterate through the selected algorithms
 		for algo in self.algo_list:
@@ -133,15 +134,23 @@ class vericat:
 
 			#list output with proper formatting
 			if self.file_format:
-				output += hash + " " + self.input_filename + "\n"
+				self.output_data += hash + " " + self.input_filename + "\n"
 			else:
-				output += algo + ": " + hash + "\n"
-		
-		#we remove the last newline off the file to not append an empty line
-		return output
+				self.output_data += algo + ": " + hash + "\n"
+
+	#write output to user (or file if requested)
+	def write_output(self):
+		if self.output_path != "" and self.output_data != "":
+			f = open(self.output_path, "w")
+			f.write(self.output_data)
+			f.close()
+			print("Output written to ", self.output_path)
+		else:
+			print(self.output_data)
+
 
 cat = vericat()
-'''
+
 cat.input_path = "test.cat"
 cat.input_filename = "test.cat"
 
@@ -154,13 +163,5 @@ f = open(cat.input_path, "rb")
 data = f.read()
 f.close()
 
-
-#output to file if requested
-if cat.output_path != "":
-	f = open(cat.output_path, "w")
-	f.write(output)
-	f.close()
-	print("Output written to " + cat.output_path)
-else:
-	print(output)
-	'''
+cat.gen_hashes(data)
+cat.write_output()
