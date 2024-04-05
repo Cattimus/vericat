@@ -208,7 +208,7 @@ def main():
 			cat.algo_list = l
 
 		#value is a hash that is intended to be checked against
-		elif hash_pattern.match(arg):
+		elif hash_pattern.match(arg).group() == arg:
 			cat.arg_hashes.append(arg)
 
 	if cat.input_path != None and cat.hash_path != None:
