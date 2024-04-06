@@ -157,12 +157,24 @@ class vericat:
 				self.reference_hashes[algo].update(data)
 		file.close()
 
-		#TODO - move this logic into it's own function
+	#write reference hashes to stdout or file
+	def write_reference_hashes(self):
+		#assemble output
+		output = ""
 		for algo in self.reference_hashes:
 			if self.file_format:
-				self.output_data += f"{self.reference_hashes[algo].hexdigest()} {file.name}\n"
+				output += f"{self.reference_hashes[algo].hexdigest()} {self.target_path}\n"
 			else:
-				self.output_data += f"{algo}: {self.reference_hashes[algo].hexdigest()}\n"
+				output += f"{algo:>7}: {self.reference_hashes[algo].hexdigest()}\n"
+		
+		#write to file
+		if self.output_path != None:
+			f = open(self.output_path, "w")
+			f.write(output)
+			f.close()
+		#print to terminal
+		else:
+			print(output, end="")
 
 	#write output to user (or file if requested)
 	def write_output(self):
@@ -208,7 +220,6 @@ def main():
 			cat.file_format = val.lower() == "true"
 
 		#select algorithm(s)
-		#TODO - update this to work with the dictionary
 		elif "--algo=" in arg:
 			val = arg.split("=")[1]
 			selected = val.split(",")
@@ -226,7 +237,6 @@ def main():
 	if cat.target_path != None and cat.hashfile_path != None:
 		cat.load_hashfile()
 		cat.check_hashes()
-		cat.write_output()
 
 	#generate hashes for file
 	elif cat.target_path != None:
@@ -235,7 +245,7 @@ def main():
 			cat.file_format = True
 
 		cat.gen_hashes()
-		cat.write_output()
+		cat.write_reference_hashes()
 	
 	#check hashes for file
 	elif cat.hashfile_path != None:
@@ -252,12 +262,10 @@ def main():
 			#check each hash individually
 			for hash in cat.arg_hashes:
 				cat.check_hash(hash)
-			cat.write_output()
 
 		else:
 			cat.load_hashfile()
 			cat.check_hashes()
-			cat.write_output()
 
 if __name__ == '__main__':
 	main()
