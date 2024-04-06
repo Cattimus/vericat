@@ -139,7 +139,6 @@ class vericat:
 		else:
 				print(output, end="")
 
-
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
 		self.output_data = ""
@@ -243,22 +242,21 @@ def main():
 
 		#we're checking against hashes provided as arguments
 		if len(cat.arg_hashes) > 0:
-			#inform user of the check
-			print(f"Checking hashes for file {cat.hashfile_path}...")
-
 			#make sure to generate hashes before checking
 			cat.target_path = cat.hashfile_path
-			cat.gen_hashes()
 
-			#check each hash individually
+			#add hashes to hashfile dict to make checking easy
 			for hash in cat.arg_hashes:
-				cat.check_hash(hash)
-				cat.print_hash_results()
+				algo = cat.identify_hash(hash)
+				cat.hashfile_data[algo] = hash
 
+		#get hashes from hashfile
 		else:
 			cat.load_hashfile()
-			cat.check_hashes()
-			cat.print_hash_results()
+
+		#perform comparison
+		cat.check_hashes()
+		cat.print_hash_results()
 
 if __name__ == '__main__':
 	main()
