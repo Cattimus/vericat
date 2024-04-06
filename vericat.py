@@ -26,13 +26,16 @@ class vericat:
 	hash_path = None
 
 	#for --algo=md5,sha256,sha... option
-	algo_list = {
+	reference_hashes = {
 		"md5": hashlib.md5(),
 		"sha1": hashlib.sha1(),
 		"sha256": hashlib.sha256(),
 		"sha384": hashlib.sha384(),
 		"sha512": hashlib.sha512()
-		}
+	}
+	
+	#Hashes that have been identified in a file
+	file_hashes = {}
 
 	#for hashes
 	arg_hashes = []
@@ -59,7 +62,7 @@ class vericat:
 		return None
 
 	#check hash for a single algorithm
-	def check_hash(self, path, hash):
+	def check_hash(self, hash):
 		algo = self.identify_hash(hash)
 		if algo == None:
 			return False
@@ -67,7 +70,7 @@ class vericat:
 		self.output_data += f"{algo :>7}: "
 
 		#reference hash is a known good hash that has been computed by our program
-		reference_hash = self.gen_hash(path, algo)
+		reference_hash = self.reference_hashes[algo].hexdigest()
 		
 		if reference_hash == hash:
 			self.output_data += f"MATCH [{reference_hash}]\n"
@@ -76,7 +79,7 @@ class vericat:
 			self.output_data += f"{'EXPECTED ' :>18}" + f"[{reference_hash}]\n"
 
 	#check all hashes from a file
-	def check_hashes(self):
+	def load_hashfile(self):
 		hash_data = None
 
 		#standardize path to *nix
@@ -89,7 +92,7 @@ class vericat:
 			f.close()
 		except:
 			print(f"Error opening file: {self.hash_path}", file=sys.stderr)
-			return None
+			return
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
@@ -112,12 +115,19 @@ class vericat:
 					base_path = self.hash_path[:end_index]
 				self.input_path = base_path + info[1]
 
-			#inform user of the file we're processing
-			print(f"Checking hashes for file: {self.input_path}...")
-			
-			#check hash
+			#identify hash algorithm
 			hash = info[0]
-			self.check_hash(self.input_path, hash)
+			algo = self.identify_hash(hash)
+
+			#add to our list of file hashes, we don't want any hashes that can't be identified
+			if algo != None:
+				self.file_hashes[algo] = hash
+
+		#inform user of the file we're processing
+		print(f"Checking hashes for file: {self.input_path}...")
+
+		#make sure the list of hashes is up to date for the target file
+		self.gen_hashes()
 		return
 
 	#generate a list of hashes for a file	
@@ -135,16 +145,16 @@ class vericat:
 				break
 
 			#update each algorithm in chunks
-			for algo in self.algo_list.values():
-				algo.update(data)
+			for algo in self.reference_hashes:
+				self.reference_hashes[algo].update(data)
 		file.close()
 
 		#TODO - move this logic into it's own function
-		for algo in self.algo_list:
+		for algo in self.reference_hashes:
 			if self.file_format:
-				self.output_data += f"{self.algo_list[algo].hexdigest} {file.name}\n"
+				self.output_data += f"{self.reference_hashes[algo].hexdigest()} {file.name}\n"
 			else:
-				self.output_data += f"{algo}: {self.algo_list[algo].hexdigest()}\n"
+				self.output_data += f"{algo}: {self.reference_hashes[algo].hexdigest()}\n"
 
 	#write output to user (or file if requested)
 	def write_output(self):
@@ -190,13 +200,14 @@ def main():
 			cat.file_format = val.lower() == "true"
 
 		#select algorithm(s)
+		#TODO - update this to work with the dictionary
 		elif "--algo=" in arg:
 			val = arg.split("=")[1]
 			list = val.split(",")
 
 			#do some python magic to only allow algorithms that are already in the default list
-			l = [x for x in list if x in cat.algo_list]
-			cat.algo_list = l
+			l = [x for x in list if x in cat.reference_hashes]
+			cat.reference_hashes = l
 
 		#value is possibly a hash that is intended to be checked against
 		else:
@@ -205,7 +216,7 @@ def main():
 				cat.arg_hashes.append(arg)
 
 	if cat.input_path != None and cat.hash_path != None:
-		cat.check_hashes()
+		cat.load_hashfile()
 		cat.write_output()
 
 	#generate hashes for file
@@ -229,7 +240,7 @@ def main():
 			cat.write_output()
 
 		else:
-			cat.check_hashes()
+			cat.load_hashfile()
 			cat.write_output()
 
 if __name__ == '__main__':
