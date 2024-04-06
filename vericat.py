@@ -26,7 +26,13 @@ class vericat:
 	hash_path = None
 
 	#for --algo=md5,sha256,sha... option
-	algo_list = ["md5", "sha1", "sha256", "sha384", "sha512"]
+	algo_list = {
+		"md5": hashlib.md5(),
+		"sha1": hashlib.sha1(),
+		"sha256": hashlib.sha256(),
+		"sha384": hashlib.sha384(),
+		"sha512": hashlib.sha512()
+		}
 
 	#for hashes
 	arg_hashes = []
@@ -115,6 +121,7 @@ class vericat:
 		return
 
 	#hash file from path
+	#TODO - open file and read exactly once. update all the hashes in self.algo_list with each chunk
 	def gen_hash(self, path, algo):
 		if not algo in hashlib.algorithms_available:
 			print("Hashing algorithm is not supported.", file=sys.stderr)
@@ -128,30 +135,32 @@ class vericat:
 		except:
 			print(f"Error opening file: {path}", file=sys.stderr)
 			return None
-				
+
+	#generate a list of hashes for a file	
 	def gen_hashes(self):
 		self.output_data = ""
 		print(f"Generating hashes for file: {self.input_path}...")
 
-		#iterate through the selected algorithms
+		#read file in 4kb chunks and update each hash
+		file = open(self.input_path, "rb")
+		while True:
+			data = file.read(4096)
+
+			#exit condition
+			if not data:
+				break
+
+			#update each algorithm in chunks
+			for algo in self.algo_list.values():
+				algo.update(data)
+		file.close()
+
+		#TODO - move this logic into it's own function
 		for algo in self.algo_list:
-
-			#generate hash for the algorithm
-			hash = self.gen_hash(self.input_path, algo)
-
-			#give only the filename, remove the rest of the path
-			final_path = self.input_path
-			if self.truncate_path:
-				i = final_path.rfind("/")
-				if i == -1:
-					i = final_path.rfind("\\")
-				final_path = final_path[i+1:]
-
-			#list output in either cmd style or file style
 			if self.file_format:
-				self.output_data += f"{hash} {final_path}\n"
+				self.output_data += f"{self.algo_list[algo].hexdigest} {file.name}\n"
 			else:
-				self.output_data += f"{algo}: {hash}\n"
+				self.output_data += f"{algo}: {self.algo_list[algo].hexdigest()}\n"
 
 	#write output to user (or file if requested)
 	def write_output(self):
