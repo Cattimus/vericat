@@ -20,10 +20,10 @@ class vericat:
 	pattern = r"([0-9a-fA-F]+) +(\S+)"
 
 	#for -g(en) option
-	input_path = None
+	target_path = None
 
 	#for -c(heck) option
-	hash_path = None
+	hashfile_path = None
 
 	#for --algo=md5,sha256,sha... option
 	reference_hashes = {
@@ -35,14 +35,13 @@ class vericat:
 	}
 	
 	#Hashes that have been identified in a file
-	file_hashes = {}
+	hashfile_data = {}
 
 	#for hashes
 	arg_hashes = []
 
 	#for -o(utput) option
 	output_path = None
-
 	output_data = ""
 
 	#for -f=true/false (file format) option
@@ -50,7 +49,7 @@ class vericat:
 	manual_format = False
 	
 	#for -t (truncate path) option
-	truncate_path = False
+	truncate_path = True
 
 	#attempt to identify hashing algorithm by length of hash
 	def identify_hash(self, hash):
@@ -83,15 +82,15 @@ class vericat:
 		hash_data = None
 
 		#standardize path to *nix
-		self.hash_path = self.hash_path.replace("\\", "/")
+		self.hashfile_path = self.hashfile_path.replace("\\", "/")
 
 		#get list of hashes from hashfile
 		try:
-			f = open(self.hash_path, "r")
+			f = open(self.hashfile_path, "r")
 			hash_data = f.read()
 			f.close()
 		except:
-			print(f"Error opening file: {self.hash_path}", file=sys.stderr)
+			print(f"Error opening file: {self.hashfile_path}", file=sys.stderr)
 			return
 
 		#read data from all lines of the hashfile
@@ -105,15 +104,15 @@ class vericat:
 			info = info.groups()
 
 			#get the filename to check from the hashfile
-			if self.input_path == None:
+			if self.target_path == None:
 				#get the current working directory
-				end_index = self.hash_path.rfind("/")+1
+				end_index = self.hashfile_path.rfind("/")+1
 				base_path = ""
 
 				#construct new file path given filename and working directory
 				if end_index != -1:
-					base_path = self.hash_path[:end_index]
-				self.input_path = base_path + info[1]
+					base_path = self.hashfile_path[:end_index]
+				self.target_path = base_path + info[1]
 
 			#identify hash algorithm
 			hash = info[0]
@@ -121,10 +120,10 @@ class vericat:
 
 			#add to our list of file hashes, we don't want any hashes that can't be identified
 			if algo != None:
-				self.file_hashes[algo] = hash
+				self.hashfile_data[algo] = hash
 
 		#inform user of the file we're processing
-		print(f"Checking hashes for file: {self.input_path}...")
+		print(f"Checking hashes for file: {self.target_path}...")
 
 		#make sure the list of hashes is up to date for the target file
 		self.gen_hashes()
@@ -133,10 +132,10 @@ class vericat:
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
 		self.output_data = ""
-		print(f"Generating hashes for file: {self.input_path}...")
+		print(f"Generating hashes for file: {self.target_path}...")
 
 		#read file in 4kb chunks and update each hash
-		file = open(self.input_path, "rb")
+		file = open(self.target_path, "rb")
 		while True:
 			data = file.read(4096)
 
@@ -180,12 +179,12 @@ def main():
 
 		#check hashes
 		if arg == "-check" or arg == "-c":
-			cat.hash_path = sys.argv[i+1]
+			cat.hashfile_path = sys.argv[i+1]
 			i += 1
 			
 		#generate hashes
 		elif arg == "-gen" or arg == "-g" or arg == "-i":
-			cat.input_path = sys.argv[i+1]
+			cat.target_path = sys.argv[i+1]
 			i += 1
 
 		#output file
@@ -215,12 +214,12 @@ def main():
 			if match != None and match.group() == arg:
 				cat.arg_hashes.append(arg)
 
-	if cat.input_path != None and cat.hash_path != None:
+	if cat.target_path != None and cat.hashfile_path != None:
 		cat.load_hashfile()
 		cat.write_output()
 
 	#generate hashes for file
-	elif cat.input_path != None:
+	elif cat.target_path != None:
 		#automatically set file format to true for generating if an output file is set
 		if cat.output_path != None and cat.manual_format == False:
 			cat.file_format = True
@@ -229,13 +228,13 @@ def main():
 		cat.write_output()
 	
 	#check hashes for file
-	elif cat.hash_path != None:
+	elif cat.hashfile_path != None:
 
 		#we're checking against hashes provided as arguments
 		if len(cat.arg_hashes) > 0:
-			print(f"Checking hashes for file {cat.hash_path}...")
+			print(f"Checking hashes for file {cat.hashfile_path}...")
 			for hash in cat.arg_hashes:
-				cat.check_hash(cat.hash_path, hash)
+				cat.check_hash(cat.hashfile_path, hash)
 
 			cat.write_output()
 
