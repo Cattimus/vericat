@@ -211,10 +211,10 @@ def main():
 		#TODO - update this to work with the dictionary
 		elif "--algo=" in arg:
 			val = arg.split("=")[1]
-			list = val.split(",")
+			selected = val.split(",")
 
-			#do some python magic to only allow algorithms that are already in the default list
-			l = [x for x in list if x in cat.reference_hashes]
+			#do some python magic to only include algorithms from the input list
+			l = {key:value for (key,value) in cat.reference_hashes.items() if key in selected}
 			cat.reference_hashes = l
 
 		#value is possibly a hash that is intended to be checked against
