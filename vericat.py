@@ -205,9 +205,11 @@ def main():
 			l = [x for x in list if x in cat.algo_list]
 			cat.algo_list = l
 
-		#value is a hash that is intended to be checked against
-		elif hash_pattern.match(arg).group() == arg:
-			cat.arg_hashes.append(arg)
+		#value is possibly a hash that is intended to be checked against
+		else:
+			match = hash_pattern.match(arg)
+			if match != None and match.group() == arg:
+				cat.arg_hashes.append(arg)
 
 	if cat.input_path != None and cat.hash_path != None:
 		cat.check_hashes()
