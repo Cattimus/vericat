@@ -120,22 +120,6 @@ class vericat:
 			self.check_hash(self.input_path, hash)
 		return
 
-	#hash file from path
-	#TODO - open file and read exactly once. update all the hashes in self.algo_list with each chunk
-	def gen_hash(self, path, algo):
-		if not algo in hashlib.algorithms_available:
-			print("Hashing algorithm is not supported.", file=sys.stderr)
-			return None
-		
-		try:
-			handle = open(path, "rb")
-			hash = hashlib.file_digest(handle, algo).hexdigest()
-			handle.close()
-			return hash
-		except:
-			print(f"Error opening file: {path}", file=sys.stderr)
-			return None
-
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
 		self.output_data = ""
