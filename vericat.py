@@ -71,6 +71,7 @@ class vericat:
 		#reference hash is a known good hash that has been computed by our program
 		reference_hash = self.reference_hashes[algo].hexdigest()
 		
+		#TODO - move this into it's own function
 		if reference_hash == hash:
 			self.output_data += f"MATCH [{reference_hash}]\n"
 		else:
@@ -121,13 +122,21 @@ class vericat:
 			#add to our list of file hashes, we don't want any hashes that can't be identified
 			if algo != None:
 				self.hashfile_data[algo] = hash
-
+		return
+	
+	#This should be called after load_hashfile.
+	def check_hashes(self):
 		#inform user of the file we're processing
 		print(f"Checking hashes for file: {self.target_path}...")
 
 		#make sure the list of hashes is up to date for the target file
 		self.gen_hashes()
-		return
+
+		#iterate through the list of hashes from the file
+		for hash in self.hashfile_data:
+			if hash in self.reference_hashes:
+				self.check_hash(self.hashfile_data[hash])
+
 
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
@@ -216,6 +225,7 @@ def main():
 
 	if cat.target_path != None and cat.hashfile_path != None:
 		cat.load_hashfile()
+		cat.check_hashes()
 		cat.write_output()
 
 	#generate hashes for file
@@ -232,14 +242,21 @@ def main():
 
 		#we're checking against hashes provided as arguments
 		if len(cat.arg_hashes) > 0:
+			#inform user of the check
 			print(f"Checking hashes for file {cat.hashfile_path}...")
-			for hash in cat.arg_hashes:
-				cat.check_hash(cat.hashfile_path, hash)
 
+			#make sure to generate hashes before checking
+			cat.target_path = cat.hashfile_path
+			cat.gen_hashes()
+
+			#check each hash individually
+			for hash in cat.arg_hashes:
+				cat.check_hash(hash)
 			cat.write_output()
 
 		else:
 			cat.load_hashfile()
+			cat.check_hashes()
 			cat.write_output()
 
 if __name__ == '__main__':
