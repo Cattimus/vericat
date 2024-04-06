@@ -47,10 +47,9 @@ class vericat:
 	def identify_hash(self, hash):
 		l = len(hash)
 		if l in hashes:
-			self.output_data += f"{hashes[l] :>7}: "
 			return hashes[l]
 		
-		self.output_data += f"Unable to detect hashing algorithm based on input: {hash}\n"
+		print(f"Unable to detect hashing algorithm based on input: {hash}\n", file=sys.stderr)
 		return None
 
 	#check hash for a single algorithm
@@ -58,6 +57,8 @@ class vericat:
 		algo = self.identify_hash(hash)
 		if algo == None:
 			return False
+		
+		self.output_data += f"{algo :>7}: "
 
 		#reference hash is a known good hash that has been computed by our program
 		reference_hash = self.gen_hash(path, algo)
@@ -69,14 +70,8 @@ class vericat:
 			self.output_data += f"{'EXPECTED ' :>18}" + f"[{reference_hash}]\n"
 
 	#check all hashes from a file
-	#by default, it will get the name of the file from the hash file on disk
-	#can also optionally accept a filepath if the hash file is in another directory
 	def check_hashes(self):
 		hash_data = None
-
-		if self.input_path != None:
-			#this is written to stdout to display immediately
-			print(f"Checking hashes for file: {self.input_path}...")
 
 		#standardize path to *nix
 		self.hash_path = self.hash_path.replace("\\", "/")
@@ -100,16 +95,19 @@ class vericat:
 				break
 			info = info.groups()
 
-			#read file data so we can check hashes in realtime
+			#get the filename to check from the hashfile
 			if self.input_path == None:
-				#construct new file path from base path
+				#get the current working directory
 				end_index = self.hash_path.rfind("/")+1
 				base_path = ""
+
+				#construct new file path given filename and working directory
 				if end_index != -1:
 					base_path = self.hash_path[:end_index]
 				self.input_path = base_path + info[1]
 
-				print(f"Checking hashes for file: {self.input_path}...")
+			#inform user of the file we're processing
+			print(f"Checking hashes for file: {self.input_path}...")
 			
 			#check hash
 			hash = info[0]
@@ -141,7 +139,7 @@ class vericat:
 			#generate hash for the algorithm
 			hash = self.gen_hash(self.input_path, algo)
 
-			#truncate the inner path of file
+			#give only the filename, remove the rest of the path
 			final_path = self.input_path
 			if self.truncate_path:
 				i = final_path.rfind("/")
@@ -149,7 +147,7 @@ class vericat:
 					i = final_path.rfind("\\")
 				final_path = final_path[i+1:]
 
-			#list output with proper formatting
+			#list output in either cmd style or file style
 			if self.file_format:
 				self.output_data += f"{hash} {final_path}\n"
 			else:
