@@ -131,10 +131,13 @@ class vericat:
 				output += f"{'EXPECTED ' :>18}" + f"[{self.reference_hashes[algo].hexdigest()}]\n"
 		
 		if self.output_path != None:
-			f = open(self.output_path, "w")
-			f.write(output)
-			f.close()
-			print(f"Output written to file: {self.output_path}.")
+			try:
+				f = open(self.output_path, "w")
+				f.write(output)
+				f.close()
+				print(f"Output written to file: {self.output_path}.")
+			except Exception as e:
+				print(f"Error opening output file: {e}", file=sys.stderr)
 		else:
 				print(output, end="")
 
@@ -169,10 +172,13 @@ class vericat:
 		
 		#write to file
 		if self.output_path != None:
-			f = open(self.output_path, "w")
-			f.write(output)
-			f.close()
-			print(f"Output written to file: {self.output_path}.")
+			try:
+				f = open(self.output_path, "w")
+				f.write(output)
+				f.close()
+				print(f"Output written to file: {self.output_path}.")
+			except Exception as e:
+				print(f"Error opening output file: {e}", file=sys.stderr)
 		#print to terminal
 		else:
 			print(output, end="")
