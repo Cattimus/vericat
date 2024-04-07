@@ -72,9 +72,9 @@ class vericat:
 			f = open(self.hashfile_path, "r")
 			hash_data = f.read()
 			f.close()
-		except:
-			print(f"Error opening file: {self.hashfile_path}", file=sys.stderr)
-			return
+		except Exception as e:
+			print(f"Error processing hashfile: {e}", file=sys.stderr)
+			sys.exit(-1)
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
@@ -137,7 +137,7 @@ class vericat:
 				f.close()
 				print(f"Output written to file: {self.output_path}.")
 			except Exception as e:
-				print(f"Error opening output file: {e}", file=sys.stderr)
+				print(f"Error processing output file: {e}", file=sys.stderr)
 		else:
 				print(output, end="")
 
@@ -146,19 +146,23 @@ class vericat:
 		self.output_data = ""
 		print(f"Generating reference hashes for file: {self.target_path}...")
 
-		#read file in 4kb chunks and update each hash
-		file = open(self.target_path, "rb")
-		while True:
-			data = file.read(4096)
+		try:
+			#read file in 4kb chunks and update each hash
+			file = open(self.target_path, "rb")
+			while True:
+				data = file.read(4096)
 
-			#exit condition
-			if not data:
-				break
+				#exit condition
+				if not data:
+					break
 
-			#update each algorithm in chunks
-			for algo in self.reference_hashes:
-				self.reference_hashes[algo].update(data)
-		file.close()
+				#update each algorithm in chunks
+				for algo in self.reference_hashes:
+					self.reference_hashes[algo].update(data)
+			file.close()
+		except Exception as e:
+			print(f"Error processing reference hashes: {e}", file=sys.stderr)
+			sys.exit(-1)
 
 	#write reference hashes to stdout or file
 	def write_reference_hashes(self):
@@ -178,7 +182,7 @@ class vericat:
 				f.close()
 				print(f"Output written to file: {self.output_path}.")
 			except Exception as e:
-				print(f"Error opening output file: {e}", file=sys.stderr)
+				print(f"Error processing output file: {e}", file=sys.stderr)
 		#print to terminal
 		else:
 			print(output, end="")
