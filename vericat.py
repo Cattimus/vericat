@@ -122,7 +122,7 @@ class vericat:
 				self.results[hash] = self.reference_hashes[hash].hexdigest() == self.hashfile_data[hash]
 		
 	#print the results of hash checking
-	def print_hash_results(self):
+	def write_hash_results(self):
 		output = ""
 		for algo in self.results:
 			output += f"{algo :>7}: "
@@ -226,7 +226,7 @@ def main():
 	if cat.target_path != None and cat.hashfile_path != None:
 		cat.load_hashfile()
 		cat.check_hashes()
-		cat.print_hash_results()
+		cat.write_hash_results()
 
 	#generate hashes for file
 	elif cat.target_path != None:
@@ -256,7 +256,7 @@ def main():
 
 		#perform comparison
 		cat.check_hashes()
-		cat.print_hash_results()
+		cat.write_hash_results()
 
 if __name__ == '__main__':
 	main()
