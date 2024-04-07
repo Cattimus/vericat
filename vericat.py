@@ -4,8 +4,6 @@ import re
 
 #EDGE CASE - hashes in hashfile are for different files
 
-#TODO - clean up this stinky spaghetti mess I have created
-
 #dictionary of hashing algorithms and their expected lengths
 hashes = {
 	32: "md5",
@@ -17,7 +15,7 @@ hashes = {
 
 class vericat:
 	#pattern match for hashes in file
-	pattern = r"([0-9a-fA-F]+) +(\S+)"
+	pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
 
 	#for -g(en) option
 	target_path = None
@@ -80,7 +78,7 @@ class vericat:
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
-			info = re.search(self.pattern, line)
+			info = self.pattern.search(line)
 
 			#stop loop if we hit a line we can't parse
 	 		#this avoids reading massive binary files by accident
@@ -136,6 +134,7 @@ class vericat:
 			f = open(self.output_path, "w")
 			f.write(output)
 			f.close()
+			print(f"Output written to file: {self.output_path}.")
 		else:
 				print(output, end="")
 
@@ -173,6 +172,7 @@ class vericat:
 			f = open(self.output_path, "w")
 			f.write(output)
 			f.close()
+			print(f"Output written to file: {self.output_path}.")
 		#print to terminal
 		else:
 			print(output, end="")
