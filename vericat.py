@@ -13,6 +13,18 @@ hash_lengths = {
 	128: "sha512"
 }
 
+#attempt to identify hashing algorithm by length of hash
+def identify_hash(hash):
+	l = len(hash)
+	if l in hash_lengths:
+		return hash_lengths[l]
+	
+	print(f"Unable to detect hashing algorithm based on input: {hash}\n", file=sys.stderr)
+	return None
+
+#regex to extract data from hashfiles
+hashfile_pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
+
 class output:
 	path = None
 
@@ -78,7 +90,13 @@ class file:
 	hashfile = None
 
 	#hashes generated from program
-	reference_hashes = {}
+	reference_hashes = {
+		"md5": hashlib.md5(),
+		"sha1": hashlib.sha1(),
+		"sha256": hashlib.sha256(),
+		"sha384": hashlib.sha384(),
+		"sha512": hashlib.sha512()
+	}
 
 	#hashes obtained from file
 	hashes = {}
@@ -89,9 +107,53 @@ class file:
 	#hashes passed from argument/other file
 	arg_hashes = []
 
+	def reset_reference(self):
+		self.reference_hashes = {
+			"md5": hashlib.md5(),
+			"sha1": hashlib.sha1(),
+			"sha256": hashlib.sha256(),
+			"sha384": hashlib.sha384(),
+			"sha512": hashlib.sha512()
+		}
+	
+	#generate a list of hashes for a file	
+	def gen_hashes(self):
+		print(f"Generating reference hashes for file: {self.target_path}...")
+
+		try:
+			#read file in 4kb chunks and update each hash
+			file = open(self.path, "rb")
+			while True:
+				data = file.read(4096)
+
+				#exit condition
+				if not data:
+					break
+
+				#update each algorithm in chunks
+				for algo in self.reference_hashes:
+					self.reference_hashes[algo].update(data)
+			file.close()
+		except Exception as e:
+			print(f"Error processing reference hashes: {e}", file=sys.stderr)
+			sys.exit(-1)
+
+	#This should be called after load_hashfile.
+	def check_hashes(self):
+		#make sure the list of hashes is up to date for the target file
+		self.gen_hashes()
+
+		#inform user of the file we're processing
+		print(f"Checking hashes for file: {self.path}...")
+
+		#iterate through the list of hashes from the file
+		for hash in self.hashes:
+			if hash in self.reference_hashes:
+				self.results[hash] = self.reference_hashes[hash].hexdigest() == self.hashes[hash]
+
 class vericat:
 	#pattern match for hashes in file
-	pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
+	hashfile_pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
 
 	#for -g(en) option
 	target_path = None
@@ -127,15 +189,6 @@ class vericat:
 	#for -t (truncate path) option
 	truncate_path = True
 
-	#attempt to identify hashing algorithm by length of hash
-	def identify_hash(self, hash):
-		l = len(hash)
-		if l in hash_lengths:
-			return hash_lengths[l]
-		
-		print(f"Unable to detect hashing algorithm based on input: {hash}\n", file=sys.stderr)
-		return None
-
 	#check all hashes from a file
 	def load_hashfile(self):
 		hash_data = None
@@ -154,7 +207,7 @@ class vericat:
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
-			info = self.pattern.search(line)
+			info = self.hashfile_pattern.search(line)
 
 			#stop loop if we hit a line we can't parse
 	 		#this avoids reading massive binary files by accident
