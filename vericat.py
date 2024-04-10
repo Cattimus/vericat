@@ -39,13 +39,14 @@ class output:
 	#print the results of hash checking
 	def write_hash_results(self, file):
 		output = ""
-		for algo in file.results:
+		for hash in file.results:
+			algo = identify_hash(hash)
 			output += f"{algo :>7}: "
-			if file.results[algo]:
+			if file.results[hash]:
 				output += f"MATCH [{file.reference_hashes[algo].hexdigest()}]\n"
 			else:
-				output += f"MISMATCH [{file.hashfile_data[algo]}]\n"
-				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[algo].hexdigest()}]\n"
+				output += f"MISMATCH [{hash}]\n"
+				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[hash].hexdigest()}]\n"
 		
 		if self.path != None:
 			try:
@@ -98,14 +99,11 @@ class file:
 		"sha512": hashlib.sha512()
 	}
 
-	#hashes obtained from file
-	hashes = {}
-
 	#results of hash checking
 	results = {}
 
 	#hashes passed from argument/other file
-	arg_hashes = []
+	hashes = []
 
 	def reset_reference(self):
 		self.reference_hashes = {
@@ -118,7 +116,7 @@ class file:
 	
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
-		print(f"Generating reference hashes for file: {self.target_path}...")
+		print(f"Generating reference hashes for file: {self.path}...")
 
 		try:
 			#read file in 4kb chunks and update each hash
@@ -148,57 +146,23 @@ class file:
 
 		#iterate through the list of hashes from the file
 		for hash in self.hashes:
-			if hash in self.reference_hashes:
-				self.results[hash] = self.reference_hashes[hash].hexdigest() == self.hashes[hash]
+			algo = identify_hash(hash)
+			if algo in self.reference_hashes:
+				self.results[hash] = self.reference_hashes[algo].hexdigest() == hash
 
 class vericat:
-	#pattern match for hashes in file
-	hashfile_pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
-
-	#for -g(en) option
-	target_path = None
-
-	#for -c(heck) option
-	hashfile_path = None
-
-	#for --algo=md5,sha256,sha... option
-	reference_hashes = {
-		"md5": hashlib.md5(),
-		"sha1": hashlib.sha1(),
-		"sha256": hashlib.sha256(),
-		"sha384": hashlib.sha384(),
-		"sha512": hashlib.sha512()
-	}
-	
-	#hashes that have been identified in a file
-	hashfile_data = {}
-
-	#results of hash checking
-	results = {}
-
-	#for hashes
-	arg_hashes = []
-
-	#for -o(utput) option
-	output_path = None
-
-	#for -f=true/false (file format) option
-	file_format = False
-	manual_format = False
-	
-	#for -t (truncate path) option
-	truncate_path = True
+	files = {}
 
 	#check all hashes from a file
-	def load_hashfile(self):
+	def load_hashfile(self, path):
 		hash_data = None
 
 		#standardize path to *nix
-		self.hashfile_path = self.hashfile_path.replace("\\", "/")
+		path = path.replace("\\", "/")
 
 		#get list of hashes from hashfile
 		try:
-			f = open(self.hashfile_path, "r")
+			f = open(path, "r")
 			hash_data = f.read()
 			f.close()
 		except Exception as e:
@@ -207,7 +171,7 @@ class vericat:
 
 		#read data from all lines of the hashfile
 		for line in hash_data.split("\n"):
-			info = self.hashfile_pattern.search(line)
+			info = hashfile_pattern.search(line)
 
 			#stop loop if we hit a line we can't parse
 	 		#this avoids reading massive binary files by accident
@@ -215,107 +179,28 @@ class vericat:
 				break
 			info = info.groups()
 
-			#get the filename to check from the hashfile
-			if self.target_path == None:
-				#get the current working directory
-				end_index = self.hashfile_path.rfind("/")+1
-				base_path = ""
+			#extract filename
+			file_path = ""
+			#get the current working directory
+			end_index = path.rfind("/")+1
+			base_path = ""
 
-				#construct new file path given filename and working directory
-				if end_index != -1:
-					base_path = self.hashfile_path[:end_index]
-				self.target_path = base_path + info[1]
+			#construct new file path given filename and working directory
+			if end_index != -1:
+				base_path = path[:end_index]
+			file_path = base_path + info[1]
 
 			#identify hash algorithm
 			hash = info[0]
-			algo = self.identify_hash(hash)
 
-			#add to our list of file hashes, we don't want any hashes that can't be identified
-			if algo != None:
-				self.hashfile_data[algo] = hash
+			#create new file object
+			if not file_path in self.files:
+				self.files[file_path] = file()
+				self.files[file_path].path = file_path
+			
+			self.files[file_path].arg_hashes.append(hash)
 		return
 	
-	#This should be called after load_hashfile.
-	def check_hashes(self):
-		#make sure the list of hashes is up to date for the target file
-		self.gen_hashes()
-
-		#inform user of the file we're processing
-		print(f"Checking hashes for file: {self.target_path}...")
-
-		#iterate through the list of hashes from the file
-		for hash in self.hashfile_data:
-			if hash in self.reference_hashes:
-				self.results[hash] = self.reference_hashes[hash].hexdigest() == self.hashfile_data[hash]
-		
-	#print the results of hash checking
-	def write_hash_results(self):
-		output = ""
-		for algo in self.results:
-			output += f"{algo :>7}: "
-			if self.results[algo]:
-				output += f"MATCH [{self.reference_hashes[algo].hexdigest()}]\n"
-			else:
-				output += f"MISMATCH [{self.hashfile_data[algo]}]\n"
-				output += f"{'EXPECTED ' :>18}" + f"[{self.reference_hashes[algo].hexdigest()}]\n"
-		
-		if self.output_path != None:
-			try:
-				f = open(self.output_path, "w")
-				f.write(output)
-				f.close()
-				print(f"Output written to file: {self.output_path}.")
-			except Exception as e:
-				print(f"Error processing output file: {e}", file=sys.stderr)
-		else:
-				print(output, end="")
-
-	#generate a list of hashes for a file	
-	def gen_hashes(self):
-		self.output_data = ""
-		print(f"Generating reference hashes for file: {self.target_path}...")
-
-		try:
-			#read file in 4kb chunks and update each hash
-			file = open(self.target_path, "rb")
-			while True:
-				data = file.read(4096)
-
-				#exit condition
-				if not data:
-					break
-
-				#update each algorithm in chunks
-				for algo in self.reference_hashes:
-					self.reference_hashes[algo].update(data)
-			file.close()
-		except Exception as e:
-			print(f"Error processing reference hashes: {e}", file=sys.stderr)
-			sys.exit(-1)
-
-	#write reference hashes to stdout or file
-	def write_reference_hashes(self):
-		#assemble output
-		output = ""
-		for algo in self.reference_hashes:
-			if self.file_format:
-				output += f"{self.reference_hashes[algo].hexdigest()} {self.target_path}\n"
-			else:
-				output += f"{algo:>7}: {self.reference_hashes[algo].hexdigest()}\n"
-		
-		#write to file
-		if self.output_path != None:
-			try:
-				f = open(self.output_path, "w")
-				f.write(output)
-				f.close()
-				print(f"Output written to file: {self.output_path}.")
-			except Exception as e:
-				print(f"Error processing output file: {e}", file=sys.stderr)
-		#print to terminal
-		else:
-			print(output, end="")
-
 def main():
 	cat = vericat()
 
@@ -398,4 +283,10 @@ def main():
 		cat.write_hash_results()
 
 if __name__ == '__main__':
-	main()
+	#main()
+	f = file()
+	f.path = "vericat.py"
+	f.gen_hashes()
+
+	o = output()
+	o.write_reference_hashes(f)
