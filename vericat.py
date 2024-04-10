@@ -5,13 +5,32 @@ import re
 #EDGE CASE - hashes in hashfile are for different files
 
 #dictionary of hashing algorithms and their expected lengths
-hashes = {
+hash_lengths = {
 	32: "md5",
 	40: "sha1",
 	64: "sha256",
 	96: "sha384",
 	128: "sha512"
 }
+
+class file:
+	#for -g(en) option
+	path = None
+
+	#for -c(heck) option
+	hashfile = None
+
+	#hashes generated from program
+	reference_hashes = {}
+
+	#hashes obtained from file
+	hashes = {}
+
+	#results of hash checking
+	results = {}
+
+	#hashes passed from argument/other file
+	arg_hashes = []
 
 class vericat:
 	#pattern match for hashes in file
@@ -54,8 +73,8 @@ class vericat:
 	#attempt to identify hashing algorithm by length of hash
 	def identify_hash(self, hash):
 		l = len(hash)
-		if l in hashes:
-			return hashes[l]
+		if l in hash_lengths:
+			return hash_lengths[l]
 		
 		print(f"Unable to detect hashing algorithm based on input: {hash}\n", file=sys.stderr)
 		return None
