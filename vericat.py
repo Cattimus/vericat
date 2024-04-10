@@ -13,6 +13,63 @@ hash_lengths = {
 	128: "sha512"
 }
 
+class output:
+	path = None
+
+	#true: algo: hash
+	#false: hash filename
+	file_format = False
+	manual_format = False
+
+	#add only the filename in output file
+	truncate_path = True
+
+	#print the results of hash checking
+	def write_hash_results(self, file):
+		output = ""
+		for algo in file.results:
+			output += f"{algo :>7}: "
+			if file.results[algo]:
+				output += f"MATCH [{file.reference_hashes[algo].hexdigest()}]\n"
+			else:
+				output += f"MISMATCH [{file.hashfile_data[algo]}]\n"
+				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[algo].hexdigest()}]\n"
+		
+		if self.path != None:
+			try:
+				f = open(self.path, "w")
+				f.write(output)
+				f.close()
+				print(f"Output written to file: {self.path}.")
+			except Exception as e:
+				print(f"Error processing output file: {e}", file=sys.stderr)
+		else:
+				print(output, end="")
+
+	#write reference hashes to stdout or file
+	def write_reference_hashes(self, file):
+		#assemble output
+		output = ""
+		for algo in file.reference_hashes:
+			if self.file_format:
+				output += f"{file.reference_hashes[algo].hexdigest()} {file.path}\n"
+			else:
+				output += f"{algo:>7}: {file.reference_hashes[algo].hexdigest()}\n"
+		
+		#write to file
+		if self.path != None:
+			try:
+				f = open(self.path, "w")
+				f.write(output)
+				f.close()
+				print(f"Output written to file: {self.path}.")
+			except Exception as e:
+				print(f"Error processing output file: {e}", file=sys.stderr)
+		#print to terminal
+		else:
+			print(output, end="")
+
+
 class file:
 	#for -g(en) option
 	path = None
