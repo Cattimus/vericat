@@ -2,8 +2,6 @@ import hashlib
 import sys
 import re
 
-#EDGE CASE - hashes in hashfile are for different files
-
 #dictionary of hashing algorithms and their expected lengths
 hash_lengths = {
 	32: "md5",
@@ -149,12 +147,18 @@ class file:
 			file.close()
 		except Exception as e:
 			print(f"Error processing reference hashes: {e}", file=sys.stderr)
-			sys.exit(-1)
+			self.reference_hashes = {}
+			return
 
 	#This should be called after load_hashfile.
 	def check_hashes(self):
 		#prevent this from running if there's no hashes to check
 		if len(self.hashes) == 0:
+			return
+		
+		#prevent this from running if reference hashes haven't been generated
+		if len(self.reference_hashes.keys()) == 0:
+			self.results = {}
 			return
 
 		#inform user of the file we're processing
@@ -165,7 +169,11 @@ class file:
 			algo = identify_hash(hash)
 			if algo in self.reference_hashes:
 				self.results[hash] = self.reference_hashes[algo].hexdigest() == hash
+			else:
+				self.results[hash] = False
 
+#TODO - hashfiles are not being parsed properly, everything is being added to the first file
+#TODO - program crashes if files in hashfile don't exist
 class vericat:
 	files = {}
 	out = output()
@@ -222,10 +230,10 @@ class vericat:
 			hash = info[0]
 
 			#create new file object
-			if not file_path in self.files:
+			if not file_path in self.files.keys():
 				self.files[file_path] = file(file_path)
 				self.files[file_path].path = file_path
-			
+
 			self.files[file_path].hashes.append(hash)
 		return
 	
