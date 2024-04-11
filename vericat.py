@@ -200,10 +200,12 @@ class vericat:
 
 	#add hashes to the first file in the list
 	def add_hashes(self):
-		self.files.vlaues()[0].hashes.extend(self.arg_hashes)
+		for file in self.files.values():
+			file.hashes.extend(self.arg_hashes)
 
 	#perform hash checking for each file object
 	def perform_checks(self):
+		self.add_hashes()
 		for file in self.files.values():
 			file.check()
 			self.out.write(file)
@@ -274,9 +276,16 @@ def main():
 			i += 1
 			
 		#generate hashes
-		elif arg == "-gen" or arg == "-g" or arg == "-i":
+		elif arg == "-gen" or arg == "-g":
 			filename = sys.argv[i+1]
 			cat.files[filename] = file(filename)
+			i += 1
+
+		#input file to check against hashes that are included
+		elif arg == "-i":
+			filename = sys.argv[i+1]
+			cat.files[filename] = file(filename)
+			cat.out.check = True
 			i += 1
 
 		#output file
