@@ -105,6 +105,15 @@ class file:
 	#hashes passed from argument/other file
 	hashes = []
 
+	#with filename
+	def __init__(self, filename: str):
+		self.path = filename
+
+	#with filename and list of hashes
+	def __init__(self, filename: str, hashes: list):
+		self.path = filename
+		self.hashes = hashes
+
 	def reset_reference(self):
 		self.reference_hashes = {
 			"md5": hashlib.md5(),
@@ -152,6 +161,8 @@ class file:
 
 class vericat:
 	files = {}
+	out = output()
+	arg_hashes = []
 
 	#check all hashes from a file
 	def load_hashfile(self, path):
@@ -211,27 +222,31 @@ def main():
 	for i in range(1, len(sys.argv)):
 		arg = sys.argv[i]
 
-		#check hashes
+		#load hashes from file
 		if arg == "-check" or arg == "-c":
-			cat.hashfile_path = sys.argv[i+1]
+			cat.load_hashfile(sys.argv[i+1])
 			i += 1
 			
 		#generate hashes
 		elif arg == "-gen" or arg == "-g" or arg == "-i":
-			cat.target_path = sys.argv[i+1]
+			filename = sys.argv[i+1]
+			cat.files[filename] = file(filename)
 			i += 1
 
 		#output file
 		elif arg == "-output" or arg == "-o":
-			cat.output_path = sys.argv[i+1]
+			output_filename = sys.argv[i+1]
+			cat.out.path = output_filename
+			cat.out.file_format = True
 			i += 1
 
 		#set file_format flag
 		elif "-f=" in arg:
-			cat.manual_format = True
+			cat.out.manual_format = True
 			val = arg.split("=")[1]
-			cat.file_format = val.lower() == "true"
+			cat.out.file_format = val.lower() == "true"
 
+		#TODO - this needs a rework
 		#select algorithm(s)
 		elif "--algo=" in arg:
 			val = arg.split("=")[1]
@@ -247,6 +262,7 @@ def main():
 			if match != None and match.group() == arg:
 				cat.arg_hashes.append(arg)
 
+	#TODO - all of these need a rework
 	if cat.target_path != None and cat.hashfile_path != None:
 		cat.load_hashfile()
 		cat.check_hashes()
