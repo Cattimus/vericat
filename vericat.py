@@ -11,14 +11,16 @@ hash_lengths = {
 	128: "sha512"
 }
 
+#list of algorithms to generate
+accepted_algos = ["md5", "sha1", "sha256", "sha384", "sha512"]
+
 #attempt to identify hashing algorithm by length of hash
 def identify_hash(hash):
 	l = len(hash)
 	if l in hash_lengths:
 		return hash_lengths[l]
 	
-	print(f"Unable to detect hashing algorithm based on input: {hash}\n", file=sys.stderr)
-	return None
+	return "ERROR [Unidentifiable hash]"
 
 #regex to extract data from hashfiles
 hashfile_pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
@@ -31,13 +33,21 @@ class output:
 	file_format = False
 	manual_format = False
 
+	#flag for the output format
+	check = False
+
 	#add only the filename in output file
 	truncate_path = True
 
 	#generic write
 	def write(self, file):
+		#do not print file results if the file cannot be found
+		if file.err:
+			print()
+			return
+
 		#choose which output style to write based on file properties
-		if len(file.results) > 0:
+		if self.check:
 			self.write_hash_results(file)
 		else:
 			self.write_reference_hashes(file)
@@ -45,14 +55,17 @@ class output:
 	#print the results of hash checking
 	def write_hash_results(self, file):
 		output = ""
-		for hash in file.results:
+		for hash in file.hashes:
 			algo = identify_hash(hash)
 			output += f"{algo :>7}: "
-			if file.results[hash]:
-				output += f"MATCH [{file.reference_hashes[algo].hexdigest()}]\n"
+			if not hash in file.results.keys():
+				output += f"Algorithm not supported or not enabled\n"
 			else:
-				output += f"MISMATCH [{hash}]\n"
-				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[algo].hexdigest()}]\n"
+				if file.results[hash]:
+					output += f"MATCH [{file.reference_hashes[algo].hexdigest()}]\n"
+				else:
+					output += f"MISMATCH [{hash}]\n"
+					output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[algo].hexdigest()}]\n"
 		
 		if self.path != None:
 			try:
@@ -63,7 +76,7 @@ class output:
 			except Exception as e:
 				print(f"Error processing output file: {e}", file=sys.stderr)
 		else:
-				print(output, end="")
+				print(output)
 
 	#write reference hashes to stdout or file
 	def write_reference_hashes(self, file):
@@ -86,7 +99,7 @@ class output:
 				print(f"Error processing output file: {e}", file=sys.stderr)
 		#print to terminal
 		else:
-			print(output, end="")
+			print(output)
 
 
 class file:
@@ -94,13 +107,7 @@ class file:
 	path = None
 
 	#hashes generated from program
-	reference_hashes = {
-		"md5": hashlib.md5(),
-		"sha1": hashlib.sha1(),
-		"sha256": hashlib.sha256(),
-		"sha384": hashlib.sha384(),
-		"sha512": hashlib.sha512()
-	}
+	reference_hashes = {}
 
 	#results of hash checking
 	results = {}
@@ -108,12 +115,21 @@ class file:
 	#hashes passed from argument/other file
 	hashes = []
 
+	#flag for if an error has occured that should disable printing results
+	err = False
+
 	#with filename and list of hashes
 	def __init__(self, filename: str, hashes: list = []):
 		self.path = filename
 		self.hashes = hashes
+		
+		self.results = {}
+		self.hashes = []
+		self.err = False
 
 	def reset_reference(self):
+		global accepted_algos
+
 		self.reference_hashes = {
 			"md5": hashlib.md5(),
 			"sha1": hashlib.sha1(),
@@ -122,8 +138,14 @@ class file:
 			"sha512": hashlib.sha512()
 		}
 
+		#do some python magic to only include algorithms from the input list
+		l = {key:value for (key,value) in self.reference_hashes.items() if key in accepted_algos}
+		self.reference_hashes = l
+
 	#generic function to be run for each file
 	def check(self):
+		#reference hashes are initialized here to make sure the --algo flag works
+		self.reset_reference()
 		self.gen_hashes()
 		self.check_hashes()
 	
@@ -148,6 +170,7 @@ class file:
 		except Exception as e:
 			print(f"Error processing reference hashes: {e}", file=sys.stderr)
 			self.reference_hashes = {}
+			self.err = True
 			return
 
 	#This should be called after load_hashfile.
@@ -169,11 +192,7 @@ class file:
 			algo = identify_hash(hash)
 			if algo in self.reference_hashes:
 				self.results[hash] = self.reference_hashes[algo].hexdigest() == hash
-			else:
-				self.results[hash] = False
 
-#TODO - hashfiles are not being parsed properly, everything is being added to the first file
-#TODO - program crashes if files in hashfile don't exist
 class vericat:
 	files = {}
 	out = output()
@@ -217,6 +236,7 @@ class vericat:
 
 			#extract filename
 			file_path = ""
+
 			#get the current working directory
 			end_index = path.rfind("/")+1
 			base_path = ""
@@ -249,6 +269,7 @@ def main():
 
 		#load hashes from file
 		if arg == "-check" or arg == "-c":
+			cat.out.check = True
 			cat.load_hashfile(sys.argv[i+1])
 			i += 1
 			
@@ -271,15 +292,11 @@ def main():
 			val = arg.split("=")[1]
 			cat.out.file_format = val.lower() == "true"
 
-		#TODO - this needs a rework
 		#select algorithm(s)
 		elif "--algo=" in arg:
+			global accepted_algos
 			val = arg.split("=")[1]
-			selected = val.split(",")
-
-			#do some python magic to only include algorithms from the input list
-			l = {key:value for (key,value) in cat.reference_hashes.items() if key in selected}
-			cat.reference_hashes = l
+			accepted_algos = val.split(",")
 
 		#value is possibly a hash that is intended to be checked against
 		else:
