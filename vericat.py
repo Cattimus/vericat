@@ -36,6 +36,14 @@ class output:
 	#add only the filename in output file
 	truncate_path = True
 
+	#generic write
+	def write(self, file):
+		#choose which output style to write based on file properties
+		if len(file.results) > 0:
+			self.write_hash_results(file)
+		else:
+			self.write_reference_hashes(file)
+
 	#print the results of hash checking
 	def write_hash_results(self, file):
 		output = ""
@@ -87,9 +95,6 @@ class file:
 	#for -g(en) option
 	path = None
 
-	#for -c(heck) option
-	hashfile = None
-
 	#hashes generated from program
 	reference_hashes = {
 		"md5": hashlib.md5(),
@@ -122,6 +127,11 @@ class file:
 			"sha384": hashlib.sha384(),
 			"sha512": hashlib.sha512()
 		}
+
+	#generic function to be run for each file
+	def check(self):
+		self.gen_hashes()
+		self.check_hashes()
 	
 	#generate a list of hashes for a file	
 	def gen_hashes(self):
@@ -147,8 +157,9 @@ class file:
 
 	#This should be called after load_hashfile.
 	def check_hashes(self):
-		#make sure the list of hashes is up to date for the target file
-		self.gen_hashes()
+		#prevent this from running if there's no hashes to check
+		if len(self.hashes) == 0:
+			return
 
 		#inform user of the file we're processing
 		print(f"Checking hashes for file: {self.path}...")
@@ -163,6 +174,16 @@ class vericat:
 	files = {}
 	out = output()
 	arg_hashes = []
+
+	#add hashes to the first file in the list
+	def add_hashes(self):
+		self.files.values()[0].extend(self.arg_hashes)
+
+	#perform hash checking for each file object
+	def perform_checks(self):
+		for file in self.files.values():
+			file.check()
+			self.out.write(file)
 
 	#check all hashes from a file
 	def load_hashfile(self, path):
@@ -261,48 +282,14 @@ def main():
 			match = hash_pattern.match(arg)
 			if match != None and match.group() == arg:
 				cat.arg_hashes.append(arg)
-
-	#TODO - all of these need a rework
-	if cat.target_path != None and cat.hashfile_path != None:
-		cat.load_hashfile()
-		cat.check_hashes()
-		cat.write_hash_results()
-
-	#generate hashes for file
-	elif cat.target_path != None:
-		#automatically set file format to true for generating if an output file is set
-		if cat.output_path != None and cat.manual_format == False:
-			cat.file_format = True
-
-		cat.gen_hashes()
-		cat.write_reference_hashes()
 	
-	#check hashes for file
-	elif cat.hashfile_path != None:
+	
+	#automatically set file format if we're outputting to a file
+	if cat.out.path != None:
+		cat.out.file_format = True
 
-		#we're checking against hashes provided as arguments
-		if len(cat.arg_hashes) > 0:
-			#make sure to generate hashes before checking
-			cat.target_path = cat.hashfile_path
-
-			#add hashes to hashfile dict to make checking easy
-			for hash in cat.arg_hashes:
-				algo = cat.identify_hash(hash)
-				cat.hashfile_data[algo] = hash
-
-		#get hashes from hashfile
-		else:
-			cat.load_hashfile()
-
-		#perform comparison
-		cat.check_hashes()
-		cat.write_hash_results()
+	#check hashes
+	cat.perform_checks()
 
 if __name__ == '__main__':
-	#main()
-	f = file()
-	f.path = "vericat.py"
-	f.gen_hashes()
-
-	o = output()
-	o.write_reference_hashes(f)
+	main()
