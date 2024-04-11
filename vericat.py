@@ -54,7 +54,7 @@ class output:
 				output += f"MATCH [{file.reference_hashes[algo].hexdigest()}]\n"
 			else:
 				output += f"MISMATCH [{hash}]\n"
-				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[hash].hexdigest()}]\n"
+				output += f"{'EXPECTED ' :>18}" + f"[{file.reference_hashes[algo].hexdigest()}]\n"
 		
 		if self.path != None:
 			try:
@@ -110,12 +110,8 @@ class file:
 	#hashes passed from argument/other file
 	hashes = []
 
-	#with filename
-	def __init__(self, filename: str):
-		self.path = filename
-
 	#with filename and list of hashes
-	def __init__(self, filename: str, hashes: list):
+	def __init__(self, filename: str, hashes: list = []):
 		self.path = filename
 		self.hashes = hashes
 
@@ -177,7 +173,7 @@ class vericat:
 
 	#add hashes to the first file in the list
 	def add_hashes(self):
-		self.files.values()[0].extend(self.arg_hashes)
+		self.files.vlaues()[0].hashes.extend(self.arg_hashes)
 
 	#perform hash checking for each file object
 	def perform_checks(self):
@@ -227,10 +223,10 @@ class vericat:
 
 			#create new file object
 			if not file_path in self.files:
-				self.files[file_path] = file()
+				self.files[file_path] = file(file_path)
 				self.files[file_path].path = file_path
 			
-			self.files[file_path].arg_hashes.append(hash)
+			self.files[file_path].hashes.append(hash)
 		return
 	
 def main():
@@ -282,11 +278,6 @@ def main():
 			match = hash_pattern.match(arg)
 			if match != None and match.group() == arg:
 				cat.arg_hashes.append(arg)
-	
-	
-	#automatically set file format if we're outputting to a file
-	if cat.out.path != None:
-		cat.out.file_format = True
 
 	#check hashes
 	cat.perform_checks()
