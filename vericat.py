@@ -2,6 +2,8 @@ import hashlib
 import sys
 import re
 
+#TODO - make truncate_path work again
+
 #dictionary of hashing algorithms and their expected lengths
 hash_lengths = {
 	32: "md5",
@@ -191,7 +193,7 @@ class file:
 		for hash in self.hashes:
 			algo = identify_hash(hash)
 			if algo in self.reference_hashes:
-				self.results[hash] = self.reference_hashes[algo].hexdigest() == hash
+				self.results[hash] = self.reference_hashes[algo].hexdigest() == hash.lower()
 
 class vericat:
 	files = {}
