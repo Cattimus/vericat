@@ -248,7 +248,7 @@ class vericat:
 			#construct new file path given filename and working directory
 			if end_index != -1:
 				base_path = path[:end_index]
-			file_path = base_path + info[1]
+			file_path = base_path + re.sub(r"[\<\>\|\?\*]+", "", info[1])
 
 			#identify hash algorithm
 			hash = info[0]
