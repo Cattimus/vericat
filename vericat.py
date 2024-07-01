@@ -24,6 +24,32 @@ def identify_hash(hash):
 	
 	return "ERROR [Unidentifiable hash]"
 
+helptext = '''[Vericat]
+-g, -gen [filename]
+	Generate a list of hashes for the input filename
+
+-c, -check [filename]
+	Automatically check hashes based on a check file. Works with output from the program and standard .sha256 type files.
+
+-i [hash] [filename]
+	Check user provided hashes against the provided file. Multiple hashes may be passed in a comma separated list [hash1],[hash2],[hash3]
+
+-o, -output [output_filename]
+	Optional argument that will write the output to a file instead of to the console.
+
+-f=[true/false]
+	Optional flag to force enable file format mode.
+	Stdout mode is "sha1: [hash]"
+	File format mode is "[hash] [filename]"
+
+--algo=[hash_name],[hash_name]
+	Optional argument that allows you to select which hashes you want to generate.
+	Multiple hashes may be provided in a comma,separated,list.
+
+--help
+	Displays this text
+'''
+
 #regex to extract data from hashfiles
 hashfile_pattern = re.compile(r"([0-9a-fA-F]+) +(\S+)")
 
@@ -245,6 +271,7 @@ class vericat:
 			end_index = path.rfind("/")+1
 			base_path = ""
 
+			#TODO - account for this being given as a full path. It wouldn't really make sense for this to ever happen, but it is possible
 			#construct new file path given filename and working directory
 			if end_index != -1:
 				base_path = path[:end_index]
@@ -308,6 +335,12 @@ def main():
 			global accepted_algos
 			val = arg.split("=")[1]
 			accepted_algos = val.split(",")
+		
+		#print help message
+		elif "--help" in arg:
+			global helptext
+			print(helptext)
+			exit(0)
 
 		#value is possibly a hash that is intended to be checked against
 		else:
