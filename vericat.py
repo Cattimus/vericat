@@ -3,6 +3,7 @@ import sys
 import re
 
 #TODO - make truncate_path work again
+#TODO - account for multiple input files when output is redirected to file
 
 #dictionary of hashing algorithms and their expected lengths
 hash_lengths = {
@@ -300,7 +301,8 @@ def main():
 		exit(0)
 
 	#start handling command line arguments
-	for i in range(1, len(sys.argv)):
+	i = 1
+	while(i < len(sys.argv)):
 		arg = sys.argv[i]
 
 		#load hashes from file
@@ -346,11 +348,21 @@ def main():
 			print(helptext)
 			exit(0)
 
-		#value is possibly a hash that is intended to be checked against
+		#value has no preceeding arguments
 		else:
+
+			#value is a hash
 			match = hash_pattern.match(arg)
 			if match != None and match.group() == arg:
 				cat.arg_hashes.append(arg)
+			
+			#we assume value is a binary file
+			#this is possibly a dangerous assumption
+			else:
+				cat.files[arg] = file(arg)
+		
+		i += 1
+
 
 	#check hashes
 	cat.perform_checks()
