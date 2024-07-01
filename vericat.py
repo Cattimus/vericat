@@ -294,6 +294,11 @@ def main():
 	#pattern to check if something is a hash or not
 	hash_pattern = re.compile(r'[0-9a-fA-F]+')
 
+	#print helptext if no arguments are provided
+	if(len(sys.argv) == 1):
+		print(helptext)
+		exit(0)
+
 	#start handling command line arguments
 	for i in range(1, len(sys.argv)):
 		arg = sys.argv[i]
@@ -338,7 +343,6 @@ def main():
 		
 		#print help message
 		elif "--help" in arg:
-			global helptext
 			print(helptext)
 			exit(0)
 
